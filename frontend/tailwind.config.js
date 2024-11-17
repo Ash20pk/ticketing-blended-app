@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  include: [
+    "src/types/window.d.ts",
+    // other include paths...
+  ],
   darkMode: ["class"],
   content: [
     './src/pages/**/*.{ts,tsx}',

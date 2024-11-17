@@ -13,6 +13,19 @@ const contractABI = [
   "function getTotalTickets() public view returns (uint256)",
 ]
 
+// Fluent network configuration
+const fluentNetwork = {
+  chainId: "0x5201",
+  chainName: "Fluent Devnet",
+  nativeCurrency: {
+    name: "ETH",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: ["https://rpc.dev.gblend.xyz"],
+  blockExplorerUrls: ["https://blockscout.dev.gblend.xyz/"],
+}
+
 export default function Home() {
   const [account, setAccount] = useState<string>("")
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null)
@@ -23,9 +36,49 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  async function switchToFluentNetwork() {
+    if (typeof window.ethereum === "undefined") {
+      setError("Please install MetaMask!")
+      return false
+    }
+
+    try {
+      // Try to switch to the Fluent network
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: fluentNetwork.chainId }],
+      })
+      return true
+    } catch (switchError: any) {
+      // If the network doesn't exist, add it
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [fluentNetwork],
+          })
+          return true
+        } catch (addError) {
+          console.error("Error adding network:", addError)
+          setError("Failed to add Fluent network")
+          return false
+        }
+      } else {
+        console.error("Error switching network:", switchError)
+        setError("Failed to switch network")
+        return false
+      }
+    }
+  }
+
   async function connectWallet() {
     try {
+      setError("")
       if (typeof window.ethereum !== "undefined") {
+        // First switch to Fluent network
+        const switched = await switchToFluentNetwork()
+        if (!switched) return
+
         const provider = new ethers.BrowserProvider(window.ethereum)
         const accounts = await provider.send("eth_requestAccounts", [])
         const signer = await provider.getSigner()
